@@ -53,10 +53,13 @@ void AIPlayer::think(color & c_piece, int & id_piece, int & dice) const{
             valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, ValoracionTest);
             break;
         case 1:
-            valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion1);
+            valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, ValoracionTest);
             break;
         case 2:
-            valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion2);
+            valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, ValoracionTest);
+            break;
+        case 3:
+            valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, ValoracionTest);
             break;
     }
     cout << "Valor MiniMax: " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
@@ -320,3 +323,48 @@ double AIPlayer::ValoracionTest(const Parchis &estado, int jugador)
     }
 }
 
+double AIPlayer::Poda_AlfaBeta(const Parchis& actual, int jugador, int profundidad, int profundidad_max, color& c_piece,
+                     int& id_piece, int& dice, double alpha, double beta, double (*heuristic)(const Parchis&, int)) const {
+    // Check if the maximum depth or a terminal state is reached
+    if (profundidad == profundidad_max || actual.isGoalMove() || actual.isEatingMove() || actual.gameOver()) {
+        return heuristic(actual, jugador);
+    }
+
+    // Get all possible moves for the current player
+    ParchisBros moves = actual.getChildren();
+
+    // Variable to store the best move's heuristic value
+    double bestHeuristic = menosinf;
+
+    // Iterate through all possible moves
+    for (ParchisBros::Iterator it = moves.begin(); it != moves.end(); ++it) {
+        // Apply the move to create a new game state
+        Parchis newGameState = actual;
+        newGameState.movePiece(it.getMovedColor(), it.getMovedPieceId(), it.getMovedDiceValue());
+
+        // Variables to store the selected move's information
+        color temp_c_piece;
+        int temp_id_piece;
+        int temp_dice;
+
+        // Recursive call to evaluate the new game state
+        double currentHeuristic = -Poda_AlfaBeta(newGameState, jugador, profundidad + 1, profundidad_max, temp_c_piece,
+                                                 temp_id_piece, temp_dice, -beta, -alpha, heuristic);
+
+        // Update the best heuristic value and selected move if necessary
+        if (currentHeuristic > bestHeuristic) {
+            bestHeuristic = currentHeuristic;
+            c_piece = temp_c_piece;
+            id_piece = temp_id_piece;
+            dice = temp_dice;
+        }
+
+        // Perform alpha-beta pruning
+        alpha = max(alpha, bestHeuristic);
+        if (alpha >= beta) {
+            break;
+        }
+    }
+
+    return bestHeuristic;
+}
