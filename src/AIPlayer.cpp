@@ -36,7 +36,7 @@ void AIPlayer::think(color & c_piece, int & id_piece, int & dice) const{
             thinkMejorOpcion(c_piece, id_piece, dice);
         break;
     } */
-    
+
     // El siguiente código se proporciona como sugerencia para iniciar la implementación del agente.
 
     double valor; // Almacena el valor con el que se etiqueta el estado tras el proceso de busqueda.
@@ -53,18 +53,18 @@ void AIPlayer::think(color & c_piece, int & id_piece, int & dice) const{
             valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, ValoracionTest);
             break;
         case 1:
-            valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, ValoracionTest);
+            valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion1);
             break;
         case 2:
-            valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, ValoracionTest);
+            valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion2);
             break;
         case 3:
-            valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, ValoracionTest);
+            valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion1);
             break;
     }
     cout << "Valor MiniMax: " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
 
-   
+
 }
 
 void AIPlayer::thinkAleatorio(color & c_piece, int & id_piece, int & dice) const{
@@ -178,7 +178,7 @@ void AIPlayer::thinkFichaMasAdelantada(color & c_piece, int & id_piece, int & di
     // Ahora, en vez de mover una ficha al azar, voy a mover (o a aplicar
     // el dado especial a) la que esté más adelantada
     // (equivalentemente, la más cercana a la meta).
-    
+
     int player = actual->getCurrentPlayerId();
     vector<tuple<color, int>> current_pieces = actual->getAvailablePieces(player, dice);
 
@@ -323,48 +323,200 @@ double AIPlayer::ValoracionTest(const Parchis &estado, int jugador)
     }
 }
 
+double AIPlayer::MiValoracion1(const Parchis &estado, int jugador){
+    int ganador = estado.getWinner();
+    int oponente = (jugador + 1) % 2;
+
+    // Si hay un ganador, devuelvo más/menos infinito, según si he ganado yo o el oponente.
+    if (ganador == jugador)
+    {
+        return gana;
+    }
+    else if (ganador == oponente)
+    {
+        return pierde;
+
+    }else{
+        // Colores que juega mi jugador y colores del oponente
+        vector<color> my_colors = estado.getPlayerColors(jugador);
+        vector<color> op_colors = estado.getPlayerColors(oponente);
+
+        int puntuacion_jugador = 0;
+        if( estado.isEatingMove()){
+            puntuacion_jugador += 50;
+        }
+        for (int i = 0; i < my_colors.size(); i++){
+            color c = my_colors[i];
+            // Recorro las fichas de ese color.
+            for (int j = 0; j < num_pieces; j++)
+            {
+                // sumatoria de todas las casillas avanzadas por el jugador
+                int dtg = 73;
+                /* try
+                {
+                    Box pos_fic = estado.getBoard().getPieces(c)[j].get_box();
+                    dtg = estado.distanceToGoal(c, pos_fic);
+                }
+                catch(const std::exception& e)
+                {
+
+                } */
+                puntuacion_jugador += (74 - dtg);
+                // Esto puntua positivamente que hayan muros
+                Box pos_ficha = estado.getBoard().getPieces(c)[j].get_box();
+                color c_b = estado.isWall(pos_ficha);
+                if(c_b == c){
+                    puntuacion_jugador += 8;
+                }
+                // Si la ficha esta en una casilla segura
+                if (estado.isSafePiece(c, j))
+                {
+                    puntuacion_jugador += 15;
+                }else{// si no esta en una casilla segura comrpobar la distancia al enemigo mas cercano
+                    // Si esa distancia es >= 12 entonces es una casilla segura
+                    bool es_segura = true;
+                    for (int i_op = 0; i_op < op_colors.size() && es_segura; i_op++){
+                        color c_op = my_colors[i];
+                        for (int j_op = 0; j_op < num_pieces && es_segura; j_op++){
+                            Box pos_ficha_op = estado.getBoard().getPieces(c)[j].get_box();
+                            int distancia = estado.distanceBoxtoBox(c_op, pos_ficha_op, pos_ficha);
+                            if (distancia < 12){
+                                es_segura = false;
+                            }
+                        }
+                    }
+                    if(es_segura)
+                        puntuacion_jugador += 5;
+                }
+
+                if (pos_ficha.type == final_queue)
+                {
+                    puntuacion_jugador += 5;
+                }
+                if (pos_ficha.type == goal)
+                {
+                    puntuacion_jugador += 15;
+                }
+            }
+        }
+
+        int puntuacion_oponente = 0;
+        // Para el oponente
+        for (int i = 0; i < op_colors.size(); i++){
+            color c = op_colors[i];
+            // Recorro las fichas de ese color.
+            for (int j = 0; j < num_pieces; j++)
+            {
+                // sumatoria de todas las casillas avanzadas por el jugador
+                int dtg = estado.distanceToGoal(c, j);
+                puntuacion_oponente += (73 - dtg);
+
+                // Esto puntua positivamente que hayan muros
+                Box pos_ficha = estado.getBoard().getPieces(c)[j].get_box();
+                color c_b = estado.isWall(pos_ficha);
+                if(c_b == c){
+                    puntuacion_oponente += 8;
+                }
+                // Si la ficha esta en una casilla segura
+                if (estado.isSafePiece(c, j))
+                {
+                    puntuacion_oponente += 15;
+                }else{// si no esta en una casilla segura comrpobar la distancia al enemigo mas cercano
+                    // Si esa distancia es >= 12 entonces es una casilla segura
+                    bool es_segura = true;
+                    for (int i_op = 0; i_op < my_colors.size() && es_segura; i_op++){
+                        color c_op = my_colors[i];
+                        for (int j_op = 0; j_op < num_pieces && es_segura; j_op++){
+                            Box pos_ficha_op = estado.getBoard().getPiece(c,j).get_box();
+                            int distancia = estado.distanceBoxtoBox(c_op, pos_ficha_op, pos_ficha);
+                            if (distancia < 12){
+                                es_segura = false;
+                            }
+                        }
+                    }
+                    if(es_segura)
+                        puntuacion_oponente += 5;
+                }
+
+                if (pos_ficha.type == final_queue)
+                {
+                    puntuacion_oponente += 5;
+                }
+                if (pos_ficha.type == goal)
+                {
+                    puntuacion_oponente += 15;
+                }
+            }
+        }
+
+        return (puntuacion_jugador-puntuacion_oponente);
+    }
+
+}
+
+double AIPlayer::MiValoracion2(const Parchis &estado, int jugador){
+
+}
+
 double AIPlayer::Poda_AlfaBeta(const Parchis& actual, int jugador, int profundidad, int profundidad_max, color& c_piece,
                      int& id_piece, int& dice, double alpha, double beta, double (*heuristic)(const Parchis&, int)) const {
-    // Check if the maximum depth or a terminal state is reached
-    if (profundidad == profundidad_max || actual.isGoalMove() || actual.isEatingMove() || actual.gameOver()) {
+    if (profundidad >= profundidad_max) {
         return heuristic(actual, jugador);
     }
 
-    // Get all possible moves for the current player
-    ParchisBros moves = actual.getChildren();
+    double valor;
 
-    // Variable to store the best move's heuristic value
-    double bestHeuristic = menosinf;
+    if (jugador == actual.getCurrentPlayerId()){
+        ParchisBros hijos = actual.getChildren();
 
-    // Iterate through all possible moves
-    for (ParchisBros::Iterator it = moves.begin(); it != moves.end(); ++it) {
-        // Apply the move to create a new game state
-        Parchis newGameState = actual;
-        newGameState.movePiece(it.getMovedColor(), it.getMovedPieceId(), it.getMovedDiceValue());
+        for (ParchisBros::Iterator it = hijos.begin(); it != hijos.end() ; ++it){
+            Parchis siguiente_hijo = *it;
 
-        // Variables to store the selected move's information
-        color temp_c_piece;
-        int temp_id_piece;
-        int temp_dice;
+            valor = Poda_AlfaBeta(siguiente_hijo, jugador, profundidad + 1, profundidad_max, c_piece, id_piece, dice,
+                                                                                                alpha, beta, heuristic);
 
-        // Recursive call to evaluate the new game state
-        double currentHeuristic = -Poda_AlfaBeta(newGameState, jugador, profundidad + 1, profundidad_max, temp_c_piece,
-                                                 temp_id_piece, temp_dice, -beta, -alpha, heuristic);
+            if (valor > alpha){
+                alpha = valor;
+                if (profundidad == 0){
+                    c_piece = it.getMovedColor();
+                    id_piece = it.getMovedPieceId();
+                    dice = it.getMovedDiceValue();
+                }
+            }
 
-        // Update the best heuristic value and selected move if necessary
-        if (currentHeuristic > bestHeuristic) {
-            bestHeuristic = currentHeuristic;
-            c_piece = temp_c_piece;
-            id_piece = temp_id_piece;
-            dice = temp_dice;
+            if (alpha >= beta){
+                return beta;
+            }
+
         }
 
-        // Perform alpha-beta pruning
-        alpha = max(alpha, bestHeuristic);
-        if (alpha >= beta) {
-            break;
+        return alpha;
+    }
+    else {
+        ParchisBros hijos = actual.getChildren();
+
+        for (ParchisBros::Iterator it = hijos.begin(); it != hijos.end() ; ++it){
+            Parchis siguiente_hijo = *it;
+
+            valor = Poda_AlfaBeta(siguiente_hijo, jugador, profundidad + 1, profundidad_max, c_piece, id_piece, dice,
+                                                                                                alpha, beta, heuristic);
+
+            if (valor < beta){
+                beta = valor;
+                if (profundidad == 0){
+                    c_piece = it.getMovedColor();
+                    id_piece = it.getMovedPieceId();
+                    dice = it.getMovedDiceValue();
+                }
+            }
+
+            if (alpha >= beta){
+                return alpha;
+            }
+
         }
+
+        return beta;
     }
 
-    return bestHeuristic;
 }
