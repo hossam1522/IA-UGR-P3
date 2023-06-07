@@ -363,7 +363,7 @@ double AIPlayer::MiValoracion1(const Parchis &estado, int jugador){
                 } */
                 puntuacion_jugador += (74 - dtg);
                 // Esto puntua positivamente que hayan muros
-                Box pos_ficha = estado.getBoard().getPieces(c)[j].get_box();
+                Box pos_ficha = estado.getBoard().getPiece(c,j).get_box();
                 color c_b = estado.isWall(pos_ficha);
                 if(c_b == c){
                     puntuacion_jugador += 8;
@@ -378,7 +378,7 @@ double AIPlayer::MiValoracion1(const Parchis &estado, int jugador){
                     for (int i_op = 0; i_op < op_colors.size() && es_segura; i_op++){
                         color c_op = my_colors[i];
                         for (int j_op = 0; j_op < num_pieces && es_segura; j_op++){
-                            Box pos_ficha_op = estado.getBoard().getPieces(c)[j].get_box();
+                            Box pos_ficha_op = estado.getBoard().getPiece(c,j).get_box();
                             int distancia = estado.distanceBoxtoBox(c_op, pos_ficha_op, pos_ficha);
                             if (distancia < 12){
                                 es_segura = false;
@@ -412,7 +412,7 @@ double AIPlayer::MiValoracion1(const Parchis &estado, int jugador){
                 puntuacion_oponente += (73 - dtg);
 
                 // Esto puntua positivamente que hayan muros
-                Box pos_ficha = estado.getBoard().getPieces(c)[j].get_box();
+                Box pos_ficha = estado.getBoard().getPiece(c,j).get_box();
                 color c_b = estado.isWall(pos_ficha);
                 if(c_b == c){
                     puntuacion_oponente += 8;
