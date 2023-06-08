@@ -53,13 +53,15 @@ void AIPlayer::think(color & c_piece, int & id_piece, int & dice) const{
             valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, ValoracionTest);
             break;
         case 1:
+            // Falta ninja 2 como j2 y ninja 3 como j1
             valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion1);
             break;
         case 2:
+            // Faltan todos ninja 3
             valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion2);
             break;
         case 3:
-            valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion1);
+            valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion3);
             break;
     }
     cout << "Valor MiniMax: " << valor << "  Accion: " << str(c_piece) << " " << id_piece << " " << dice << endl;
@@ -352,15 +354,15 @@ double AIPlayer::MiValoracion1(const Parchis &estado, int jugador){
             {
                 // sumatoria de todas las casillas avanzadas por el jugador
                 int dtg = 73;
-                /* try
+                try
                 {
-                    Box pos_fic = estado.getBoard().getPieces(c)[j].get_box();
+                    Box pos_fic = estado.getBoard().getPiece(c,j).get_box();
                     dtg = estado.distanceToGoal(c, pos_fic);
                 }
                 catch(const std::exception& e)
                 {
 
-                } */
+                }
                 puntuacion_jugador += (74 - dtg);
                 // Esto puntua positivamente que hayan muros
                 Box pos_ficha = estado.getBoard().getPiece(c,j).get_box();
@@ -376,9 +378,9 @@ double AIPlayer::MiValoracion1(const Parchis &estado, int jugador){
                     // Si esa distancia es >= 12 entonces es una casilla segura
                     bool es_segura = true;
                     for (int i_op = 0; i_op < op_colors.size() && es_segura; i_op++){
-                        color c_op = my_colors[i];
+                        color c_op = op_colors[i];
                         for (int j_op = 0; j_op < num_pieces && es_segura; j_op++){
-                            Box pos_ficha_op = estado.getBoard().getPiece(c,j).get_box();
+                            Box pos_ficha_op = estado.getBoard().getPiece(c_op,j_op).get_box();
                             int distancia = estado.distanceBoxtoBox(c_op, pos_ficha_op, pos_ficha);
                             if (distancia < 12){
                                 es_segura = false;
@@ -427,7 +429,7 @@ double AIPlayer::MiValoracion1(const Parchis &estado, int jugador){
                     for (int i_op = 0; i_op < my_colors.size() && es_segura; i_op++){
                         color c_op = my_colors[i];
                         for (int j_op = 0; j_op < num_pieces && es_segura; j_op++){
-                            Box pos_ficha_op = estado.getBoard().getPiece(c,j).get_box();
+                            Box pos_ficha_op = estado.getBoard().getPiece(c_op,j_op).get_box();
                             int distancia = estado.distanceBoxtoBox(c_op, pos_ficha_op, pos_ficha);
                             if (distancia < 12){
                                 es_segura = false;
@@ -455,12 +457,326 @@ double AIPlayer::MiValoracion1(const Parchis &estado, int jugador){
 }
 
 double AIPlayer::MiValoracion2(const Parchis &estado, int jugador){
+    int ganador = estado.getWinner();
+    int oponente = (jugador + 1) % 2;
+
+    // Si hay un ganador, devuelvo más/menos infinito, según si he ganado yo o el oponente.
+    if (ganador == jugador)
+    {
+        return gana;
+    }
+    else if (ganador == oponente)
+    {
+        return pierde;
+
+    }else{
+        // Colores que juega mi jugador y colores del oponente
+        vector<color> my_colors = estado.getPlayerColors(jugador);
+        vector<color> op_colors = estado.getPlayerColors(oponente);
+
+        int puntuacion_jugador = 0;
+        if( estado.isEatingMove()){
+            puntuacion_jugador += 25;
+        }
+        if (estado.isGoalMove()){
+            puntuacion_jugador += 50;
+        }
+        if (estado.gameOver()){
+            puntuacion_jugador += 1000;
+        }
+        for (int i = 0; i < my_colors.size(); i++){
+            color c = my_colors[i];
+            // Recorro las fichas de ese color.
+            for (int j = 0; j < num_pieces; j++)
+            {
+                // sumatoria de todas las casillas avanzadas por el jugador
+                /* int dtg = 73;
+                try
+                {
+                    Box pos_fic = estado.getBoard().getPiece(c,j).get_box();
+                    dtg = estado.distanceToGoal(c, pos_fic);
+                }
+                catch(const std::exception& e)
+                {
+
+                }
+                puntuacion_jugador += (74 - dtg); */
+                int dtg = estado.distanceToGoal(c, j);
+                puntuacion_jugador += (50 - dtg);
+                // Esto puntua positivamente que hayan muros
+                Box pos_ficha = estado.getBoard().getPiece(c,j).get_box();
+                color c_b = estado.isWall(pos_ficha);
+                if(c_b == c){
+                    puntuacion_jugador += 8;
+                }
+                // Si la ficha esta en una casilla segura
+                if (estado.isSafePiece(c, j))
+                {
+                    puntuacion_jugador += 20;
+                }
+                else{// si no esta en una casilla segura comrpobar la distancia al enemigo mas cercano
+                    // Si esa distancia es >= 12 entonces es una casilla segura
+                    bool es_segura = true;
+                    for (int i_op = 0; i_op < op_colors.size() && es_segura; i_op++){
+                        color c_op = op_colors[i];
+                        for (int j_op = 0; j_op < num_pieces && es_segura; j_op++){
+                            Box pos_ficha_op = estado.getBoard().getPiece(c_op,j_op).get_box();
+                            int distancia = estado.distanceBoxtoBox(c_op, pos_ficha_op, pos_ficha);
+                            if (distancia < 12 && distancia != 3){
+                                es_segura = false;
+                            }
+                        }
+                    }
+                    if(es_segura)
+                        puntuacion_jugador += 15;
+                }
+
+                puntuacion_jugador -= estado.piecesAtHome(c)*2;
+
+                if (pos_ficha.type == final_queue)
+                {
+                    puntuacion_jugador += 25;
+                }
+                if (pos_ficha.type == goal)
+                {
+                    puntuacion_jugador += 15;
+                }
+            }
+        }
+
+        int puntuacion_oponente = 0;
+        if( estado.isEatingMove()){
+            puntuacion_oponente += 25;
+        }
+        if (estado.isGoalMove()){
+            puntuacion_oponente += 50;
+        }
+        if (estado.gameOver()){
+            puntuacion_oponente += 1000;
+        }
+        // Para el oponente
+        for (int i = 0; i < op_colors.size(); i++){
+            color c = op_colors[i];
+            // Recorro las fichas de ese color.
+            for (int j = 0; j < num_pieces; j++)
+            {
+                // sumatoria de todas las casillas avanzadas por el jugador
+                int dtg = estado.distanceToGoal(c, j);
+                puntuacion_oponente += (50 - dtg);
+
+                // Esto puntua positivamente que hayan muros
+                Box pos_ficha = estado.getBoard().getPiece(c,j).get_box();
+                color c_b = estado.isWall(pos_ficha);
+                if(c_b == c){
+                    puntuacion_oponente += 8;
+                }
+                // Si la ficha esta en una casilla segura
+                if (estado.isSafePiece(c, j))
+                {
+                    puntuacion_oponente += 20;
+                }
+                else{// si no esta en una casilla segura comrpobar la distancia al enemigo mas cercano
+                    // Si esa distancia es >= 12 entonces es una casilla segura
+                    bool es_segura = true;
+                    for (int i_op = 0; i_op < my_colors.size() && es_segura; i_op++){
+                        color c_op = my_colors[i];
+                        for (int j_op = 0; j_op < num_pieces && es_segura; j_op++){
+                            Box pos_ficha_op = estado.getBoard().getPiece(c_op,j_op).get_box();
+                            int distancia = estado.distanceBoxtoBox(c_op, pos_ficha_op, pos_ficha);
+                            if (distancia < 12 && distancia != 3){
+                                es_segura = false;
+                            }
+                        }
+                    }
+                    if(es_segura)
+                        puntuacion_oponente += 15;
+                }
+
+                puntuacion_oponente -= estado.piecesAtHome(c)*2;
+
+                if (pos_ficha.type == final_queue)
+                {
+                    puntuacion_oponente += 25;
+                }
+                if (pos_ficha.type == goal)
+                {
+                    puntuacion_oponente += 15;
+                }
+            }
+        }
+
+        return (puntuacion_jugador-puntuacion_oponente);
+    }
+
+}
+
+double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
+    int ganador = estado.getWinner();
+    int oponente = (jugador + 1) % 2;
+
+    // Si hay un ganador, devuelvo más/menos infinito, según si he ganado yo o el oponente.
+    if (ganador == jugador)
+    {
+        return gana;
+    }
+    else if (ganador == oponente)
+    {
+        return pierde;
+
+    }else{
+        // Colores que juega mi jugador y colores del oponente
+        vector<color> my_colors = estado.getPlayerColors(jugador);
+        vector<color> op_colors = estado.getPlayerColors(oponente);
+
+        int puntuacion_jugador = 0;
+        if( estado.isEatingMove() ){
+            //puntuacion_jugador += 25;
+            pair <color, int> ficha_comida = estado.eatenPiece();
+            color c = ficha_comida.first;
+            if (c != jugador){
+                puntuacion_jugador += 25;
+            }
+        }
+        /* if (estado.isGoalMove()){
+            puntuacion_jugador += 50;
+        } */
+        /* if (estado.gameOver() && estado.getWinner() == jugador){
+            puntuacion_jugador += 1000;
+        } */
+        for (int i = 0; i < my_colors.size(); i++){
+            color c = my_colors[i];
+            // Recorro las fichas de ese color.
+            for (int j = 0; j < num_pieces; j++)
+            {
+                // sumatoria de todas las casillas avanzadas por el jugador
+                /* int dtg = 73;
+                try
+                {
+                    Box pos_fic = estado.getBoard().getPiece(c,j).get_box();
+                    dtg = estado.distanceToGoal(c, pos_fic);
+                }
+                catch(const std::exception& e)
+                {
+
+                }
+                puntuacion_jugador += (74 - dtg); */
+                int dtg = estado.distanceToGoal(c, j);
+                puntuacion_jugador += (50 - dtg);
+                // Esto puntua positivamente que hayan muros
+                Box pos_ficha = estado.getBoard().getPiece(c,j).get_box();
+                color c_b = estado.isWall(pos_ficha);
+                if(c_b == c){
+                    puntuacion_jugador += 8;
+                }
+                // Si la ficha esta en una casilla segura
+                if (estado.isSafePiece(c, j))
+                {
+                    puntuacion_jugador += 20;
+                }
+                else{// si no esta en una casilla segura comrpobar la distancia al enemigo mas cercano
+                    // Si esa distancia es >= 12 entonces es una casilla segura
+                    bool es_segura = true;
+                    for (int i_op = 0; i_op < op_colors.size() && es_segura; i_op++){
+                        color c_op = op_colors[i];
+                        for (int j_op = 0; j_op < num_pieces && es_segura; j_op++){
+                            Box pos_ficha_op = estado.getBoard().getPiece(c_op,j_op).get_box();
+                            int distancia = estado.distanceBoxtoBox(c_op, pos_ficha_op, pos_ficha);
+                            if (distancia < 12 && distancia != 3){
+                                es_segura = false;
+                            }
+                        }
+                    }
+                    if(es_segura)
+                        puntuacion_jugador += 15;
+                }
+
+                puntuacion_jugador -= estado.piecesAtHome(c)*2;
+
+                if (pos_ficha.type == final_queue)
+                {
+                    puntuacion_jugador += 25;
+                }
+                if (pos_ficha.type == goal)
+                {
+                    puntuacion_jugador += 100;
+                }
+            }
+        }
+
+        int puntuacion_oponente = 0;
+        if( estado.isEatingMove()){
+            //puntuacion_oponente += 25;
+            pair <color, int> ficha_comida = estado.eatenPiece();
+            color c = ficha_comida.first;
+            if (c != jugador){
+                puntuacion_oponente += 25;
+            }
+        }
+        /* if (estado.isGoalMove()){
+            puntuacion_oponente += 50;
+        } */
+        /* if (estado.gameOver() && estado.getWinner() == oponente){
+            puntuacion_oponente += 1000;
+        } */
+        // Para el oponente
+        for (int i = 0; i < op_colors.size(); i++){
+            color c = op_colors[i];
+            // Recorro las fichas de ese color.
+            for (int j = 0; j < num_pieces; j++)
+            {
+                // sumatoria de todas las casillas avanzadas por el jugador
+                int dtg = estado.distanceToGoal(c, j);
+                puntuacion_oponente += (50 - dtg);
+
+                // Esto puntua positivamente que hayan muros
+                Box pos_ficha = estado.getBoard().getPiece(c,j).get_box();
+                color c_b = estado.isWall(pos_ficha);
+                if(c_b == c){
+                    puntuacion_oponente += 8;
+                }
+                // Si la ficha esta en una casilla segura
+                if (estado.isSafePiece(c, j))
+                {
+                    puntuacion_oponente += 20;
+                }
+                else{// si no esta en una casilla segura comrpobar la distancia al enemigo mas cercano
+                    // Si esa distancia es >= 12 entonces es una casilla segura
+                    bool es_segura = true;
+                    for (int i_op = 0; i_op < my_colors.size() && es_segura; i_op++){
+                        color c_op = my_colors[i];
+                        for (int j_op = 0; j_op < num_pieces && es_segura; j_op++){
+                            Box pos_ficha_op = estado.getBoard().getPiece(c_op,j_op).get_box();
+                            int distancia = estado.distanceBoxtoBox(c_op, pos_ficha_op, pos_ficha);
+                            if (distancia < 12 && distancia != 3){
+                                es_segura = false;
+                            }
+                        }
+                    }
+                    if(es_segura)
+                        puntuacion_oponente += 15;
+                }
+
+                puntuacion_oponente -= estado.piecesAtHome(c)*2;
+
+                if (pos_ficha.type == final_queue)
+                {
+                    puntuacion_oponente += 25;
+                }
+                if (pos_ficha.type == goal)
+                {
+                    puntuacion_oponente += 100;
+                }
+            }
+        }
+
+        return (puntuacion_jugador-puntuacion_oponente);
+    }
 
 }
 
 double AIPlayer::Poda_AlfaBeta(const Parchis& actual, int jugador, int profundidad, int profundidad_max, color& c_piece,
                      int& id_piece, int& dice, double alpha, double beta, double (*heuristic)(const Parchis&, int)) const {
-    if (profundidad >= profundidad_max) {
+    if (profundidad == profundidad_max or actual.gameOver()) {
         return heuristic(actual, jugador);
     }
 
@@ -485,7 +801,7 @@ double AIPlayer::Poda_AlfaBeta(const Parchis& actual, int jugador, int profundid
             }
 
             if (alpha >= beta){
-                return beta;
+                break;
             }
 
         }
@@ -511,7 +827,7 @@ double AIPlayer::Poda_AlfaBeta(const Parchis& actual, int jugador, int profundid
             }
 
             if (alpha >= beta){
-                return alpha;
+                break;
             }
 
         }

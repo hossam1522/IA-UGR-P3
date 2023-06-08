@@ -11,14 +11,14 @@ class AIPlayer: public Player{
     public:
         /**
          * @brief Constructor de un objeto AIPlayer
-         * 
+         *
          * @param name Nombre del jugador
          */
         inline AIPlayer(const string & name):Player(name), id(1){};
-        
+
         /**
-         * @brief Constructor de un objeto AIPlayer 
-         * 
+         * @brief Constructor de un objeto AIPlayer
+         *
          * @param name Nombre  del jugador
          * @param id Id del jugador
          */
@@ -27,26 +27,26 @@ class AIPlayer: public Player{
         /**
          * @brief Función que percibe el el parchís y al jugador actual.
          * Asigna el tablero en actual y el id del jugador.
-         * 
+         *
          * @param p Instancia Parchis que se quiere percibir
          */
         inline virtual void perceive(Parchis &p){Player::perceive(p);}
 
         /**
          * @brief Función abstracta que define el movimiento devuelto por el jugador.
-         * Llama a la función movePiece con el valor asignado a los parámetros pasados 
+         * Llama a la función movePiece con el valor asignado a los parámetros pasados
          * por referencia.
-         * 
+         *
          * @return true
-         * @return false 
+         * @return false
          */
         virtual bool move();
-        
+
         /**
-         * @brief Función que se encarga de decidir el mejor movimiento posible a 
+         * @brief Función que se encarga de decidir el mejor movimiento posible a
          * partir del estado actual del tablero. Asigna a las variables pasadas por
          * referencia el valor de color de ficha, id de ficha y dado del mejor movimiento.
-         * 
+         *
          * @param c_piece Color de la ficha
          * @param id_piece Id de la ficha
          * @param dice Número de dado
@@ -61,18 +61,18 @@ class AIPlayer: public Player{
         /**
          * @brief Método que determina si el player es inteligente (decide el mejor movimiento)
          * o no. True para AIPlayer.
-         * 
-         * @return true 
-         * @return false 
+         *
+         * @return true
+         * @return false
          */
         inline virtual bool canThink() const{return true;}
 
         /**
          * @brief Heurística de prueba para validar el algoritmo de búsqueda.
-         * 
+         *
          * @param estado Instancia de Parchis con el estado actual de la partida.
          * @param jugador Id del jugador actual (0 o 1)
-         * @return double 
+         * @return double
          */
         static double ValoracionTest(const Parchis &estado, int jugador);
 
@@ -80,11 +80,13 @@ class AIPlayer: public Player{
 
         static double MiValoracion2(const Parchis &estado, int jugador);
 
+        static double MiValoracion3(const Parchis &estado, int jugador);
+
         /**
          * @brief Propuesta de declaración de la función poda alfa-beta.
          * La propuesta es solo sugerencia, los parámetros de la declaración podrían variar.
          */
-        double Poda_AlfaBeta(const Parchis &actual, int jugador, int profundidad, int profundidad_max, color &c_piece, 
+        double Poda_AlfaBeta(const Parchis &actual, int jugador, int profundidad, int profundidad_max, color &c_piece,
                     int &id_piece, int &dice, double alpha, double beta, double (*heuristic)(const Parchis &, int)) const;
 };
 #endif
