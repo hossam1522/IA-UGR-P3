@@ -61,7 +61,7 @@ void AIPlayer::think(color & c_piece, int & id_piece, int & dice) const{
             valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion2);
             break;
         case 3:
-            // Falta ninja 1 como j2 y ninja 3 como j2
+            // Falta ninja 2 y 3 como j1
             valor = Poda_AlfaBeta(*actual, jugador, 0, PROFUNDIDAD_ALFABETA, c_piece, id_piece, dice, alpha, beta, MiValoracion3);
             break;
     }
@@ -624,33 +624,23 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
     {
         return pierde;
 
-    }
-    else{
+    }else{
         // Colores que juega mi jugador y colores del oponente
         vector<color> my_colors = estado.getPlayerColors(jugador);
         vector<color> op_colors = estado.getPlayerColors(oponente);
 
         int puntuacion_jugador = 0;
-        if( estado.isEatingMove() ){
-
-            pair <color, int> ficha_comida = estado.eatenPiece();
-            color c = ficha_comida.first;
-            if (c != my_colors[0] && c != my_colors[1]){
-                puntuacion_jugador += 50;
-            }
-
-            if ((c == op_colors[0] && estado.piecesAtGoal(c) == 1 || estado.piecesAtGoal(c) == 2) ||
-                (c == op_colors[1] && estado.piecesAtGoal(c) == 1 || estado.piecesAtGoal(c) == 2)){
-                puntuacion_jugador += 200;
-            }
+        if( estado.isEatingMove()){
+            puntuacion_jugador += 25;
         }
         for (int i = 0; i < my_colors.size(); i++){
             color c = my_colors[i];
             // Recorro las fichas de ese color.
             for (int j = 0; j < num_pieces; j++)
             {
+                // sumatoria de todas las casillas avanzadas por el jugador
                 int dtg = estado.distanceToGoal(c, j);
-                puntuacion_jugador += (76 - dtg)*2;
+                puntuacion_jugador += (50 - dtg);
                 // Esto puntua positivamente que hayan muros
                 Box pos_ficha = estado.getBoard().getPiece(c,j).get_box();
                 color c_b = estado.isWall(pos_ficha);
@@ -670,7 +660,7 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
                         for (int j_op = 0; j_op < num_pieces && es_segura; j_op++){
                             Box pos_ficha_op = estado.getBoard().getPiece(c_op,j_op).get_box();
                             int distancia = estado.distanceBoxtoBox(c_op, pos_ficha_op, pos_ficha);
-                            if (distancia <= 12 && distancia != 3){
+                            if (distancia < 12 && distancia != 3){
                                 es_segura = false;
                             }
                         }
@@ -679,44 +669,22 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
                         puntuacion_jugador += 15;
                 }
 
-                puntuacion_jugador -= estado.piecesAtHome(c)*3;
-                if (estado.piecesAtGoal(c) == 2 && estado.piecesAtHome(c) == 0){
-                    puntuacion_jugador += 500;
-                }
+                puntuacion_jugador -= estado.piecesAtHome(c)*10;
 
-                if (pos_ficha.type == final_queue && estado.piecesAtGoal(c) == 2)
+                if (pos_ficha.type == final_queue)
                 {
-                    puntuacion_jugador += 50;
-                }
-                else if (pos_ficha.type == final_queue){
                     puntuacion_jugador += 25;
                 }
-
-                if (pos_ficha.type == goal && estado.piecesAtGoal(c) == 2){
-                    puntuacion_jugador += 200;
-                }
-                else if (pos_ficha.type == goal && estado.piecesAtGoal(c) == 1){
-                    puntuacion_jugador += 100;
-                }
-                else if (pos_ficha.type == goal){
-                    puntuacion_jugador += 50;
+                if (pos_ficha.type == goal)
+                {
+                    puntuacion_jugador += 15;
                 }
             }
         }
 
         int puntuacion_oponente = 0;
-        if( estado.isEatingMove() ){
-
-            pair <color, int> ficha_comida = estado.eatenPiece();
-            color c = ficha_comida.first;
-            if (c != op_colors[0] && c != op_colors[1]){
-                puntuacion_oponente += 50;
-            }
-
-            if ((c == my_colors[0] && estado.piecesAtGoal(c) == 1 || estado.piecesAtGoal(c) == 2) ||
-                (c == my_colors[1] && estado.piecesAtGoal(c) == 1 || estado.piecesAtGoal(c) == 2)){
-                puntuacion_oponente += 200;
-            }
+        if( estado.isEatingMove()){
+            puntuacion_oponente += 25;
         }
         // Para el oponente
         for (int i = 0; i < op_colors.size(); i++){
@@ -726,7 +694,7 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
             {
                 // sumatoria de todas las casillas avanzadas por el jugador
                 int dtg = estado.distanceToGoal(c, j);
-                puntuacion_oponente += (76 - dtg)*2;
+                puntuacion_oponente += (50 - dtg)*2;
 
                 // Esto puntua positivamente que hayan muros
                 Box pos_ficha = estado.getBoard().getPiece(c,j).get_box();
@@ -747,7 +715,7 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
                         for (int j_op = 0; j_op < num_pieces && es_segura; j_op++){
                             Box pos_ficha_op = estado.getBoard().getPiece(c_op,j_op).get_box();
                             int distancia = estado.distanceBoxtoBox(c_op, pos_ficha_op, pos_ficha);
-                            if (distancia <= 12 && distancia != 3){
+                            if (distancia < 12 && distancia != 3){
                                 es_segura = false;
                             }
                         }
@@ -756,30 +724,16 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
                         puntuacion_oponente += 15;
                 }
 
-                puntuacion_oponente -= estado.piecesAtHome(c)*3;
+                puntuacion_oponente -= estado.piecesAtHome(c)*10;
 
-                if (estado.piecesAtGoal(c) == 2 && estado.piecesAtHome(c) == 0){
-                    puntuacion_oponente += 500;
-                }
-
-                if (pos_ficha.type == final_queue && estado.piecesAtGoal(c) == 2)
+                if (pos_ficha.type == final_queue)
                 {
-                    puntuacion_oponente += 50;
-                }
-                else if (pos_ficha.type == final_queue){
                     puntuacion_oponente += 25;
                 }
-
-                if (pos_ficha.type == goal && estado.piecesAtGoal(c) == 2){
-                    puntuacion_oponente += 200;
+                if (pos_ficha.type == goal)
+                {
+                    puntuacion_oponente += 15;
                 }
-                else if (pos_ficha.type == goal && estado.piecesAtGoal(c) == 1){
-                    puntuacion_oponente += 100;
-                }
-                else if (pos_ficha.type == goal){
-                    puntuacion_oponente += 50;
-                }
-
             }
         }
 
