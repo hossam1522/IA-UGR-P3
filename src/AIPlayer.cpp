@@ -331,14 +331,11 @@ double AIPlayer::MiValoracion1(const Parchis &estado, int jugador){
     int oponente = (jugador + 1) % 2;
 
     // Si hay un ganador, devuelvo más/menos infinito, según si he ganado yo o el oponente.
-    if (ganador == jugador)
-    {
+    if (ganador == jugador){
         return gana;
     }
-    else if (ganador == oponente)
-    {
+    else if (ganador == oponente){
         return pierde;
-
     }
     else{
         // Colores de mi jugador y del oponente
@@ -481,14 +478,11 @@ double AIPlayer::MiValoracion2(const Parchis &estado, int jugador){
     int oponente = (jugador + 1) % 2;
 
     // Si hay un ganador, devuelvo más/menos infinito, según si he ganado yo o el oponente.
-    if (ganador == jugador)
-    {
+    if (ganador == jugador){
         return gana;
     }
-    else if (ganador == oponente)
-    {
+    else if (ganador == oponente){
         return pierde;
-
     }
     else{
         vector<color> my_colors = estado.getPlayerColors(jugador);
@@ -597,14 +591,11 @@ double AIPlayer::MiValoracion3(const Parchis &estado, int jugador){
     int oponente = (jugador + 1) % 2;
 
     // Si hay un ganador, devuelvo más/menos infinito, según si he ganado yo o el oponente.
-    if (ganador == jugador)
-    {
+    if (ganador == jugador){
         return gana;
     }
-    else if (ganador == oponente)
-    {
+    else if (ganador == oponente){
         return pierde;
-
     }
     else{
         vector<color> my_colors = estado.getPlayerColors(jugador);
